@@ -14,7 +14,7 @@ const generateToken = (user) => {
     {
       userId: user._id,
       email: user.email,
-      username: user.username,
+      name: user.name,
       profilePicture: user.profilePicture,
       darkMode: user.darkMode,
       tokenVersion: user.tokenVersion,
@@ -60,7 +60,7 @@ const sendOtp = async (email, name = null) => {
  */
 const register = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { name, email, password, role } = req.body;
 
     const existingUser = await User.findOne({ email });
     if (existingUser && existingUser.isVerified) {
@@ -71,7 +71,7 @@ const register = async (req, res) => {
     let otp = generateOTP();
 
     try {
-      const otpResult = await sendOtp(email, username);
+      const otpResult = await sendOtp(email, name);
       tempToken = otpResult.tempToken;
       otp = otpResult.otp;
     } catch {
@@ -81,15 +81,17 @@ const register = async (req, res) => {
     // Create or update user with plain password - let middleware handle hashing
     let user = existingUser;
     if (existingUser) {
-      existingUser.username = username;
+      existingUser.name = name;
       existingUser.password = password;
+      existingUser.role = role;
       existingUser.otp = otp;
       user = await existingUser.save();
     } else {
       user = await User.create({
-        username,
+        name,
         email,
         password,
+        role,
         otp,
         isVerified: false,
       });
@@ -118,7 +120,7 @@ const resendAccountVerificationOtp = async (req, res) => {
     if (!user) return sendError(res, "User not found", 404);
     if (user.isVerified) return sendError(res, "Account already verified", 400);
 
-    const { tempToken, otp } = await sendOtp(email, user.username);
+    const { tempToken, otp } = await sendOtp(email, user.name);
     user.otp = otp;
     await user.save();
 
@@ -167,9 +169,6 @@ const verifyAccount = async (req, res) => {
 };
 
 /**
- * Login User (using ObjectId instead of email)
- */
-/**
  * Login User (using email instead of ObjectId)
  */
 const login = async (req, res) => {
@@ -208,7 +207,8 @@ const login = async (req, res) => {
       user: {
         id: user._id,
         email: user.email,
-        username: user.username,
+        name: user.name,
+        role: user.role,
         profilePicture: user.profilePicture,
         darkMode: user.darkMode
       }
@@ -219,7 +219,6 @@ const login = async (req, res) => {
     return sendError(res, "An error occurred during login", 500);
   }
 };
-
 
 /**
  * Show user info
