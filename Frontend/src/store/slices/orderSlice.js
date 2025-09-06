@@ -61,7 +61,8 @@ const orderSlice = createSlice({
       })
       .addCase(fetchOrders.fulfilled, (state, action) => {
         state.loading = false;
-        state.orders = action.payload.orders || [];
+        const data = action.payload?.data || action.payload || {};
+        state.orders = data.orders || [];
       })
       .addCase(fetchOrders.rejected, (state, action) => {
         state.loading = false;
@@ -74,7 +75,8 @@ const orderSlice = createSlice({
       })
       .addCase(fetchOrderById.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentOrder = action.payload.order;
+        const data = action.payload?.data || action.payload || {};
+        state.currentOrder = data.order || null;
       })
       .addCase(fetchOrderById.rejected, (state, action) => {
         state.loading = false;
@@ -87,7 +89,8 @@ const orderSlice = createSlice({
       })
       .addCase(createOrder.fulfilled, (state, action) => {
         state.loading = false;
-        state.orders.unshift(action.payload.order);
+        const data = action.payload?.data || action.payload || {};
+        if (data.order) state.orders.unshift(data.order);
       })
       .addCase(createOrder.rejected, (state, action) => {
         state.loading = false;
@@ -100,9 +103,11 @@ const orderSlice = createSlice({
       })
       .addCase(cancelOrder.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.orders.findIndex(order => order._id === action.payload.order._id);
-        if (index !== -1) {
-          state.orders[index] = action.payload.order;
+        const data = action.payload?.data || action.payload || {};
+        const updated = data.order;
+        if (updated) {
+          const index = state.orders.findIndex((order) => order._id === updated._id);
+          if (index !== -1) state.orders[index] = updated;
         }
       })
       .addCase(cancelOrder.rejected, (state, action) => {

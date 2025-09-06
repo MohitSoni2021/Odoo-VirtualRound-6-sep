@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
+import { setSearchQuery as setSearchQueryAction } from '../../store/slices/productSlice';
 
 const Navigation = () => {
   const location = useLocation();
@@ -11,6 +12,8 @@ const Navigation = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const navigate = useNavigate();
 
   // Handle scroll effect for navbar
   useEffect(() => {
@@ -96,6 +99,14 @@ const Navigation = () => {
             <div className={`relative ${scrolled ? 'opacity-100' : 'opacity-90'}`}>
               <input
                 type="text"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    dispatch(setSearchQueryAction(searchText));
+                    navigate('/');
+                  }
+                }}
                 placeholder="Search products..."
                 className={`w-full py-2 pl-10 pr-4 rounded-full border ${
                   scrolled 
@@ -198,6 +209,15 @@ const Navigation = () => {
           <div className={`relative ${mobileMenuOpen ? 'block' : 'hidden'}`}>
             <input
               type="text"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  dispatch(setSearchQueryAction(searchText));
+                  navigate('/');
+                  setMobileMenuOpen(false);
+                }
+              }}
               placeholder="Search products..."
               className={`w-full py-2 pl-10 pr-4 rounded-full border ${
                 scrolled 

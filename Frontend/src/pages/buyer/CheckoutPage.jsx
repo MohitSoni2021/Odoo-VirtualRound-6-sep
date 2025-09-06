@@ -44,10 +44,13 @@ const CheckoutPage = () => {
   const fetchAddresses = async () => {
     try {
       const response = await GetMyAddresses(token);
-      setAddresses(response.addresses || []);
-      const primaryAddress = response.addresses?.find(addr => addr.is_primary);
+      const list = response?.data?.addresses || [];
+      setAddresses(list);
+      const primaryAddress = list.find((addr) => addr.is_primary);
       if (primaryAddress) {
         setSelectedAddress(primaryAddress._id);
+      } else if (list.length && !selectedAddress) {
+        setSelectedAddress(list[0]._id);
       }
     } catch (error) {
       console.error('Error fetching addresses:', error);
@@ -57,7 +60,16 @@ const CheckoutPage = () => {
   const handleAddressSubmit = async (e) => {
     e.preventDefault();
     try {
-      await CreateAddress(newAddress, token);
+      const resp = await CreateAddress(newAddress, token);
+      const created = resp?.data?.address;
+      // Optimistically update list and selection
+      if (created) {
+        setAddresses((prev) => {
+          const next = [created, ...prev];
+          return next.sort((a, b) => (b.is_primary === true) - (a.is_primary === true));
+        });
+        setSelectedAddress(created._id);
+      }
       setNewAddress({
         street: '',
         city: '',
@@ -67,9 +79,11 @@ const CheckoutPage = () => {
         is_primary: false
       });
       setShowAddressForm(false);
+      // Also refetch to be safe and ensure server sorting
       fetchAddresses();
     } catch (error) {
       console.error('Error creating address:', error);
+      alert(error.message || 'Failed to create address');
     }
   };
 

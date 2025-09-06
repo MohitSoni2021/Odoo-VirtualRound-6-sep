@@ -144,12 +144,22 @@ const OrdersPage = () => {
                       )}
                     </div>
                     <div className="flex space-x-3">
-                      <button
-                        onClick={() => navigate(`/products/${order.items[0]?.product?._id}`)}
-                        className="text-blue-600 hover:text-blue-800 font-medium text-sm"
-                      >
-                        View Product
-                      </button>
+                      {order.items?.[0]?.product?._id ? (
+                        <button
+                          onClick={() => navigate(`/products/${order.items[0].product._id}`)}
+                          className="text-blue-600 hover:text-blue-800 font-medium text-sm"
+                        >
+                          View Product
+                        </button>
+                      ) : (
+                        <button
+                          disabled
+                          className="text-gray-400 font-medium text-sm cursor-not-allowed"
+                          title="Product no longer available"
+                        >
+                          View Product
+                        </button>
+                      )}
                       {order.status === 'delivered' && (
                         <button
                           onClick={() => navigate(`/reviews/me`)}
