@@ -6,12 +6,12 @@ const validateUserData = (req, res, next) => {
     console.log("Validation middleware - Request body:", req.body);
     
     const registrationSchema = joi.object({
-      username: joi.string().min(3).max(30).required().messages({
-        "string.base": "Username should be a type of text",
-        "string.empty": "Username cannot be an empty field",
-        "string.min": "Username should have a minimum length of {#limit}",
-        "string.max": "Username should have a maximum length of {#limit}",
-        "any.required": "Username is a required field",
+      name: joi.string().min(3).max(50).required().messages({
+        "string.base": "Name should be a type of text",
+        "string.empty": "Name cannot be an empty field",
+        "string.min": "Name should have a minimum length of {#limit}",
+        "string.max": "Name should have a maximum length of {#limit}",
+        "any.required": "Name is a required field",
       }),
       email: joi.string().email().required().messages({
         "string.email": "Please provide a valid email address",
@@ -23,6 +23,10 @@ const validateUserData = (req, res, next) => {
         "string.max": "New password should have a maximum length of {#limit}",
         "string.empty": "New password cannot be an empty field",
         "any.required": "New password is a required field",
+      }),
+      role: joi.string().valid('buyer','seller').required().messages({
+        "any.only": "Role must be either buyer or seller",
+        "any.required": "Role is a required field",
       }),
     });
 
@@ -75,7 +79,7 @@ const validateUserData = (req, res, next) => {
 
     let schema;
 
-    if (req.body.username && req.body.email && req.body.password) {
+    if (req.body.name && req.body.email && req.body.password && req.body.role) {
       console.log("Using registration schema");
       schema = registrationSchema;
     } else if (req.body.email && req.body.otp) {
