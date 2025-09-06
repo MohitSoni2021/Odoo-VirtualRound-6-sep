@@ -12,27 +12,38 @@ function Dashboard() {
     // Check if user is logged in
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
+    const userRole = localStorage.getItem('userRole');
     
-    if (!token || !userData) {
+    if (!token) {
       navigate('/');
       return;
     }
 
     try {
-      const parsedUser = JSON.parse(userData);
-      console.log('Parsed user data:', parsedUser);
+      let parsedUser = null;
       
-      if (!parsedUser || !parsedUser.name || !parsedUser.email) {
-        console.error('Invalid user data structure:', parsedUser);
-        throw new Error('Invalid user data structure');
+      if (userData) {
+        parsedUser = JSON.parse(userData);
+        console.log('Parsed user data:', parsedUser);
+      } else {
+        // If user data is missing but we have token and role, create a minimal user object
+        parsedUser = { role: userRole };
       }
       
+      // Accept the user data structure as it is, without strict validation
+      // The backend might be returning a different structure than expected
       setUser(parsedUser);
     } catch (error) {
       console.error('Error parsing user data:', error);
-      localStorage.removeItem('user');
-      localStorage.removeItem('token');
-      navigate('/');
+      // Don't remove token and role, just recreate user object with role
+      const userRole = localStorage.getItem('userRole');
+      if (userRole) {
+        setUser({ role: userRole });
+      } else {
+        localStorage.removeItem('token');
+        localStorage.removeItem('userRole');
+        navigate('/');
+      }
     }
 
     setLoading(false);
@@ -41,6 +52,7 @@ function Dashboard() {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('userRole');
     navigate('/');
   };
 
@@ -69,10 +81,15 @@ function Dashboard() {
         <div className="border border-gray-200 rounded-lg p-6">
           {user && (
             <div>
-              <p><strong><i className="fas fa-user-circle me-2"></i>Name:</strong> {user.name}</p>
+              {user.name && (
+                <p><strong><i className="fas fa-user-circle me-2"></i>Name:</strong> {user.name}</p>
+              )}
               <p><strong><i className="fas fa-envelope me-2"></i>Email:</strong> {user.email}</p>
               {user.role && (
                 <p><strong><i className="fas fa-user-tag me-2"></i>Role:</strong> {user.role}</p>
+              )}
+              {user.id && (
+                <p><strong><i className="fas fa-id-card me-2"></i>ID:</strong> {user.id}</p>
               )}
               {user.createdAt && (
                 <p><strong><i className="fas fa-clock me-2"></i>Joined:</strong> {new Date(user.createdAt).toLocaleDateString()}</p>

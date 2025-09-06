@@ -34,10 +34,21 @@ export const getCurrentUser = createAsyncThunk(
   }
 );
 
+// Try to get user from localStorage
+let storedUser = null;
+try {
+  const userData = localStorage.getItem('user');
+  if (userData) {
+    storedUser = JSON.parse(userData);
+  }
+} catch (error) {
+  console.error('Error parsing stored user data:', error);
+}
+
 const initialState = {
-  user: null,
+  user: storedUser,
   token: localStorage.getItem('token'),
-  isAuthenticated: false,
+  isAuthenticated: !!localStorage.getItem('token'),
   loading: false,
   error: null
 };
@@ -51,6 +62,8 @@ const authSlice = createSlice({
       state.token = null;
       state.isAuthenticated = false;
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('userRole');
     },
     clearError: (state) => {
       state.error = null;
@@ -73,6 +86,10 @@ const authSlice = createSlice({
         state.token = action.payload.token;
         state.isAuthenticated = true;
         localStorage.setItem('token', action.payload.token);
+        localStorage.setItem('user', JSON.stringify(action.payload.user));
+        if (action.payload.user?.role) {
+          localStorage.setItem('userRole', action.payload.user.role);
+        }
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;

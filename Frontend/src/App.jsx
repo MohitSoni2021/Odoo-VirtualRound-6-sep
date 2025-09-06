@@ -18,6 +18,7 @@ import CheckoutPage from './pages/buyer/CheckoutPage';
 import OrdersPage from './pages/buyer/OrdersPage';
 import WishlistPage from './pages/buyer/WishlistPage';
 import ReviewsPage from './pages/buyer/ReviewsPage';
+import BuyerDashboard from './pages/buyer/BuyerDashboard';
 
 // Other Components
 import Dashboard from './components/Dashboard';
@@ -126,6 +127,38 @@ function App() {
             </RoleProtectedRoute>
           </ProtectedRoute>
         } 
+      />
+      
+      {/* Explicit role-based dashboards to match Login redirects */}
+      <Route 
+        path='/buyer/dashboard'
+        element={
+          <ProtectedRoute>
+            <RoleProtectedRoute allowedRoles={["buyer"]}>
+              <BuyerDashboard />
+            </RoleProtectedRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path='/seller/dashboard'
+        element={
+          <ProtectedRoute>
+            <RoleProtectedRoute allowedRoles={["seller"]}>
+              <Dashboard />
+            </RoleProtectedRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path='/admin/dashboard'
+        element={
+          <ProtectedRoute>
+            <RoleProtectedRoute allowedRoles={["admin"]}>
+              <Dashboard />
+            </RoleProtectedRoute>
+          </ProtectedRoute>
+        }
       />
       
       {/* Legacy Dashboard Route */}

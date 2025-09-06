@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import ApiService from '../../services/ApiService';
+import { useDispatch } from 'react-redux'
+import { loginUser } from '../../store/slices/authSlice'
 
 function Login() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [id, setId] = useState("");
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,26 +25,34 @@ function Login() {
         throw new Error('Please enter both email and password');
       }
 
-      console.log('Attempting login...');
-      const response = await ApiService.makeRequest(
-        'POST',
-        ApiService.endpoints.login,
-        { email, password }
-      );
+      // Dispatch redux thunk to login and update auth state
+      const action = await dispatch(loginUser({ email, password }));
+      if (loginUser.fulfilled.match(action)) {
+        const { user, token } = action.payload || {};
 
-      console.log('Login response:', response);
-
-      if (response.success) {
-        // Store auth data
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('user', JSON.stringify(response.user));
+        // Persist for hard refreshes
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
         
+        // Store role separately for easier access
+        if (user?.role) {
+          localStorage.setItem('userRole', user.role);
+        }
+
         setSuccessMessage('Login successful! Redirecting...');
+
+        // Role-based redirect
+        const role = user?.role;
+        let target = '/dashboard';
+        if (role === 'admin') target = '/admin/dashboard';
+        else if (role === 'seller') target = '/seller/dashboard';
+        else if (role === 'buyer') target = '/buyer/dashboard';
+
         setTimeout(() => {
-          navigate('/dashboard');
-        }, 1500);
+          navigate(target, { replace: true });
+        }, 600);
       } else {
-        throw new Error(response.message || 'Login failed');
+        throw new Error(action.error?.message || 'Login failed');
       }
     } catch (error) {
       console.error('Login error:', error);

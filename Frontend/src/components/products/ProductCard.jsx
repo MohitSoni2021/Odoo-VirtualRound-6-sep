@@ -1,6 +1,6 @@
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { addToCart, addToWishlist, removeFromWishlist } from '../../store/slices/cartSlice';
+import { addToCart } from '../../store/slices/cartSlice';
 import { addToWishlist as addToWishlistAction, removeFromWishlist as removeFromWishlistAction } from '../../store/slices/wishlistSlice';
 import { Link } from 'react-router-dom';
 
