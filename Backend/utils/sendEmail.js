@@ -149,10 +149,10 @@ const sendVerificationEmailSMTP = async (userEmail, otp, username) => {
     });
 
     const mailOptions = {
-      from: `Your Beautiful OTP<${fromEmail}>`,
+      from: `Marketplace OTP <${fromEmail}>`,
       to: userEmail,
-      subject: `${otp} is Your Beautiful OTP ${
-        username ? "account verification code" : "account recovery code"
+      subject: `${otp} is your Marketplace ${
+        username ? "account verification code" : "password reset code"
       }`,
       html: `
       <!DOCTYPE html>
@@ -162,40 +162,49 @@ const sendVerificationEmailSMTP = async (userEmail, otp, username) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>OTP Verification</title>
         <style>
-          body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-          .container { max-width: 600px; margin: 0 auto; background: #f9f9f9; border: 1px solid #ddd; }
-          .header { background: #111827; color: #fff; text-align: center; padding: 15px; }
-          .content { padding: 20px; }
+          body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f4f4f4; }
+          .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+          .header { background: #111827; color: #fff; text-align: center; padding: 20px; }
+          .header img { max-width: 160px; }
+          .content { padding: 30px; color: #333; line-height: 1.6; }
           .otp-box { margin: 30px auto; text-align: center; }
-          .otp-box h2 { font-size: 32px; margin: 0; color: #111827; }
-          .footer { border-top: 1px solid #ddd; padding: 15px; text-align: center; font-size: 12px; color: #666; }
+          .otp-box h2 { font-size: 36px; margin: 0; color: #111827; letter-spacing: 4px; }
+          .footer { background: #f9f9f9; border-top: 1px solid #ddd; padding: 15px; text-align: center; font-size: 12px; color: #666; }
         </style>
       </head>
       <body>
         <div class="container">
+          <!-- Header -->
           <div class="header">
-            <img src="https://drive.google.com/uc?export=view&id=18ywIIN7sCMiwfnt1PtbUP5N9KmOzWmsn" alt="Your Beautiful OTP" width="150" />
+            <img src="https://drive.google.com/uc?export=view&id=18ywIIN7sCMiwfnt1PtbUP5N9KmOzWmsn" alt="Marketplace Logo" />
           </div>
+    
+          <!-- Body Content -->
           <div class="content">
-            <p>Dear ${username || "User"},</p>
-            <p>We received your request for a single-use code for your Your Beautiful OTP account.</p>
-            <p>Please use the following OTP ${
-              username ? "to verify your account" : "to reset your password"
-            }:</p>
+            <p>Hi ${username || "User"},</p>
+            <p>We received your request for a one-time code for your <strong>Marketplace</strong> account.</p>
+            <p>
+              Please use the following OTP 
+              ${username ? "to verify your account" : "to reset your password"}:
+            </p>
             <div class="otp-box">
               <h2>${otp}</h2>
             </div>
-            <p>If you didn’t request this, you can ignore this email.</p>
+            <p>This code will expire shortly for your security.</p>
+            <p>If you didn’t request this, please ignore this email — your account remains secure.</p>
           </div>
+    
+          <!-- Footer -->
           <div class="footer">
-            <p>Your Beautiful OTP: An expense management system for students.</p>
-            <p>Thank you,<br/>Your Beautiful OTP Team</p>
+            <p><strong>Marketplace</strong> – A trusted platform for buying & selling products online.</p>
+            <p>Thank you for being part of our community,<br/>The Marketplace Team</p>
           </div>
         </div>
       </body>
       </html>
       `,
     };
+    
 
     const info = await transporter.sendMail(mailOptions);
     console.log("✅ SMTP Email sent successfully:", info.messageId);
