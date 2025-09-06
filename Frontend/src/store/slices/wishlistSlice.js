@@ -49,7 +49,8 @@ const wishlistSlice = createSlice({
       })
       .addCase(fetchWishlist.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload.items || [];
+        const data = action.payload?.data || action.payload || {};
+        state.items = data.items || [];
       })
       .addCase(fetchWishlist.rejected, (state, action) => {
         state.loading = false;
@@ -62,7 +63,15 @@ const wishlistSlice = createSlice({
       })
       .addCase(addToWishlist.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload.wishlist?.items || state.items;
+        const data = action.payload?.data || action.payload || {};
+        // If server returns a single wishlist entry, optimistically add it
+        const wl = data.wishlist;
+        if (wl?.product) {
+          const exists = state.items.some((it) => it.product?._id === wl.product?.toString() || it.product === wl.product);
+          if (!exists) {
+            state.items.unshift({ product: typeof wl.product === 'object' ? wl.product : { _id: wl.product }, is_deleted: false });
+          }
+        }
       })
       .addCase(addToWishlist.rejected, (state, action) => {
         state.loading = false;
@@ -75,7 +84,8 @@ const wishlistSlice = createSlice({
       })
       .addCase(removeFromWishlist.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = state.items.filter(item => item.product._id !== action.meta.arg.productId);
+        const productId = action.meta.arg.productId;
+        state.items = state.items.filter((item) => (item.product?._id || item.product) !== productId);
       })
       .addCase(removeFromWishlist.rejected, (state, action) => {
         state.loading = false;

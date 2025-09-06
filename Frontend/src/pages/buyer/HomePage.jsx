@@ -22,6 +22,10 @@ const HomePage = () => {
   const sourceProducts = products && products.length ? products : dummyProducts;
   const featuredProducts = (products && products.length ? products : featuredDummyProducts).slice(0, 4);
   const newArrivals = sourceProducts.slice(0, 8);
+  // Exclusive: showcase top-priced items as exclusive picks
+  const exclusiveProducts = [...sourceProducts]
+    .sort((a, b) => (b.price || 0) - (a.price || 0))
+    .slice(0, 8);
   const popularCategories = categories.slice(0, 8);
 
   useEffect(() => {
@@ -130,6 +134,21 @@ const HomePage = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {newArrivals.map((product) => (
+              <ProductCard key={product._id} product={product} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Exclusive Category */}
+      <section className="py-10 bg-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">Exclusive</h2>
+            <Link to="/" className="text-blue-600 hover:text-blue-800 font-medium">View All →</Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {exclusiveProducts.map((product) => (
               <ProductCard key={product._id} product={product} />
             ))}
           </div>

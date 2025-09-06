@@ -71,11 +71,12 @@ const productSlice = createSlice({
       })
       .addCase(fetchProducts.fulfilled, (state, action) => {
         state.loading = false;
-        state.products = action.payload.items || action.payload.products || [];
+        const payload = action.payload?.data || action.payload || {};
+        state.products = payload.items || payload.products || [];
         state.pagination = {
-          page: action.payload.page || 1,
-          limit: action.payload.limit || 20,
-          total: action.payload.total || 0
+          page: payload.page || 1,
+          limit: payload.limit || 20,
+          total: payload.total || 0
         };
       })
       .addCase(fetchProducts.rejected, (state, action) => {
