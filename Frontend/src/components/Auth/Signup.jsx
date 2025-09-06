@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import ApiService from '../../services/ApiService';
+import { RegisterUser } from '../../libs/routeHandler';
 
 function Signup() {
-  const [username, setUsername] = useState('');
+  const [name, setName] = useState('');
+  const [role, setRole] = useState('buyer');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -17,23 +18,17 @@ function Signup() {
     setIsLoading(true);
 
     try {
-      const response = await ApiService.makeRequest(
-        'POST',
-        ApiService.endpoints.register,
-        { username, email, password }
-      );
+      const response = await RegisterUser({ name, email, password, role });
 
       console.log('Registration response:', response);
 
       if (response.success) {
-        // Check if verificationUrl is in the data property
         if (response.data && response.data.verificationUrl) {
           setVerificationUrl(response.data.verificationUrl);
         } else if (response.verificationUrl) {
           setVerificationUrl(response.verificationUrl);
         } else {
-          // If no verificationUrl is found, still show a success message
-          setVerificationUrl('#'); // Use a placeholder URL
+          setVerificationUrl('#');
         }
       } else {
         setError(response.message || 'Registration failed');
@@ -63,11 +58,40 @@ function Signup() {
               id="fullName"
               placeholder="Enter your full name"
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               required
             />
           </div>
+
+          <div className="mb-4">
+            <span className="block text-gray-700 font-bold mb-2">Role</span>
+            <div className="flex items-center gap-6">
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  name="role"
+                  value="buyer"
+                  checked={role === 'buyer'}
+                  onChange={(e) => setRole(e.target.value)}
+                  className="form-radio h-4 w-4 text-blue-600"
+                />
+                <span className="ml-2">Buyer</span>
+              </label>
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  name="role"
+                  value="seller"
+                  checked={role === 'seller'}
+                  onChange={(e) => setRole(e.target.value)}
+                  className="form-radio h-4 w-4 text-blue-600"
+                />
+                <span className="ml-2">Seller</span>
+              </label>
+            </div>
+          </div>
+
           <div className="mb-4">
             <label htmlFor="email" className="block text-gray-700 font-bold mb-2">Email</label>
             <input

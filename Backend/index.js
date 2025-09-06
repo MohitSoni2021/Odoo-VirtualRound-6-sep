@@ -6,6 +6,18 @@ import cors from "cors";
 
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
+import profileRoutes from "./routes/profileRoutes.js";
+import categoryRoutes from "./routes/categoryRoutes.js";
+import productRoutes from "./routes/productRoutes.js";
+import cartRoutes from "./routes/cartRoutes.js";
+import addressRoutes from "./routes/addressRoutes.js";
+import orderRoutes from "./routes/orderRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
+import wishlistRoutes from "./routes/wishlistRoutes.js";
+import reviewRoutes from "./routes/reviewRoutes.js";
+import messageRoutes from "./routes/messageRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -34,6 +46,18 @@ app.use(express.static('public'));
 
 // Routes
 app.use("/auth", authRoutes);
+app.use("/users", userRoutes);
+app.use("/profiles", profileRoutes);
+app.use("/categories", categoryRoutes);
+app.use("/products", productRoutes);
+app.use("/carts", cartRoutes);
+app.use("/addresses", addressRoutes);
+app.use("/orders", orderRoutes);
+app.use("/payments", paymentRoutes);
+app.use("/wishlists", wishlistRoutes);
+app.use("/reviews", reviewRoutes);
+app.use("/messages", messageRoutes);
+app.use("/notifications", notificationRoutes);
 
 // Serve verification page
 app.get('/verify-account', (req, res) => {

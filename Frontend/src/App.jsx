@@ -7,6 +7,8 @@ import VerifyAccount from './components/Auth/VerifyAccount';
 import Dashboard from './components/Dashboard';
 import {BrowserRouter, Routes, Route, Navigate} from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import Landing from './pages/Landing';
+import RoleProtectedRoute from './components/common/RoleProtectedRoute';
 
 // Protected route component
 const ProtectedRoute = ({ children }) => {
@@ -27,11 +29,14 @@ function App() {
         <Route path='/signup' element={<Signup/>}></Route>
         <Route path='/forget-password' element={<ForgetPassword/>}></Route>
         <Route path='/verify-account' element={<VerifyAccount/>}></Route>
+        <Route path='/eco' element={<Landing/>}></Route>
         <Route 
           path='/dashboard' 
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <RoleProtectedRoute allowedRoles={["buyer","seller","admin"]}>
+                <Dashboard />
+              </RoleProtectedRoute>
             </ProtectedRoute>
           }
         />

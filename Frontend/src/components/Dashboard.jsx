@@ -22,7 +22,7 @@ function Dashboard() {
       const parsedUser = JSON.parse(userData);
       console.log('Parsed user data:', parsedUser);
       
-      if (!parsedUser || !parsedUser.username) {
+      if (!parsedUser || !parsedUser.name || !parsedUser.email) {
         console.error('Invalid user data structure:', parsedUser);
         throw new Error('Invalid user data structure');
       }
@@ -65,12 +65,15 @@ function Dashboard() {
           <i className="fas fa-sign-out-alt me-2"></i>Logout
         </button>
       </div>
-      <div className="mt-8 grid grid-cols-2 gap-6">
+      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="border border-gray-200 rounded-lg p-6">
           {user && (
             <div>
-              <p><strong><i className="fas fa-user-circle me-2"></i>Username:</strong> {user.username}</p>
+              <p><strong><i className="fas fa-user-circle me-2"></i>Name:</strong> {user.name}</p>
               <p><strong><i className="fas fa-envelope me-2"></i>Email:</strong> {user.email}</p>
+              {user.role && (
+                <p><strong><i className="fas fa-user-tag me-2"></i>Role:</strong> {user.role}</p>
+              )}
               {user.createdAt && (
                 <p><strong><i className="fas fa-clock me-2"></i>Joined:</strong> {new Date(user.createdAt).toLocaleDateString()}</p>
               )}
