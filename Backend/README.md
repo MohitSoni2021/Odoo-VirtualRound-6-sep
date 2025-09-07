@@ -194,6 +194,88 @@ Content-Type: application/json
 ```
 
 
+## Frontend Overview
+
+This repository also contains a React frontend under `Frontend/` that consumes the above APIs.
+
+- Tech: React, React Router, Vite, Tailwind (as applicable)
+- API Access: Centralized API wrapper (e.g., `src/services/api.js`) that attaches `Authorization: Bearer <token>` when available
+- State: Each page/component maintains `loading` and `error` states; success/error surfaced via toasts/alerts
+- Routing: Central registry (e.g., `src/routerHandler.js`) declares all routes
+
+### Major Pages mapped to Backend Endpoints
+
+- Profile
+  - `GET /profiles/me` (view profile)
+  - `PATCH /profiles/me` (edit profile)
+  - `PUT /auth/change-password` (settings)
+- Users (Admin)
+  - `GET /users` (list + filters), `GET /users/:id`, `PATCH /users/:id`
+- Categories
+  - `GET /categories` (public)
+  - Admin: `POST /categories`, `PATCH /categories/:id`, `DELETE /categories/:id`
+- Products
+  - `GET /products`, `GET /products/:id`
+  - `POST /products`, `PATCH /products/:id`
+- Cart & Checkout
+  - `GET /carts/me`, `POST /carts/me/items`, `PATCH /carts/me/items/:productId`, `DELETE /carts/me/items/:productId`
+  - Checkout uses `POST /orders` then `POST /payments` (as applicable)
+- Addresses
+  - `GET /addresses/me`, `POST /addresses/me`, `PATCH /addresses/me/:id`, `POST /addresses/me/:id/make-primary`
+- Orders
+  - `GET /orders/me`, `GET /orders/:id`, Admin: `GET /orders`, `PATCH /orders/:id/status`
+- Payments
+  - `GET /payments/me`, `GET /payments/order/:orderId`, Admin: `GET /payments`, `PATCH /payments/:id`
+- Wishlist
+  - `GET /wishlists/me`, `POST /wishlists`, `DELETE /wishlists/:productId`
+- Reviews
+  - `GET /reviews/product/:productId`, `POST /reviews`, `GET /reviews/me`, Admin delete
+- Messages
+  - `GET /messages/with/:userId`, `POST /messages`
+- Notifications
+  - `GET /notifications/me`, mark read/unread, Admin send/bulk
+
+### Suggested Frontend Structure
+
+```
+Frontend/
+ ┣ src/
+ ┃ ┣ pages/
+ ┃ ┃ ┣ ProfilePage.jsx
+ ┃ ┃ ┣ SettingsPage.jsx
+ ┃ ┃ ┣ ProductsPage.jsx
+ ┃ ┃ ┣ ProductDetailsPage.jsx
+ ┃ ┃ ┣ CartPage.jsx
+ ┃ ┃ ┣ CheckoutPage.jsx
+ ┃ ┃ ┣ MyOrdersPage.jsx
+ ┃ ┃ ┣ OrderDetailsPage.jsx
+ ┃ ┃ ┣ AdminOrdersPage.jsx
+ ┃ ┃ ┣ WishlistPage.jsx
+ ┃ ┃ ┣ NotificationsPage.jsx
+ ┃ ┃ ┗ AdminDashboard.jsx
+ ┃ ┣ components/
+ ┃ ┣ services/
+ ┃ ┃ ┣ api.js
+ ┃ ┃ ┣ userService.js
+ ┃ ┃ ┣ productService.js
+ ┃ ┃ ┣ cartService.js
+ ┃ ┃ ┣ orderService.js
+ ┃ ┃ ┗ authService.js
+ ┃ ┗ routerHandler.js
+```
+
+### Frontend Setup
+
+1. Install dependencies
+   - Frontend: `cd Frontend && npm install`
+2. Environment variables (optional)
+   - Create `Frontend/.env` with `VITE_API_BASE_URL=http://localhost:3000`
+3. Run the dev server
+   - `npm run dev` (Vite default port `5173`)
+4. Authentication
+   - On login, store the JWT (e.g., localStorage) and attach it as `Authorization: Bearer <token>` in the API client
+
+
 ## Notes
 
 - Most list endpoints support `page`, `limit`, and resource‑specific filters

@@ -1,216 +1,311 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchProducts, fetchCategories, setSearchQuery, setSelectedCategory, setPriceRange } from '../../store/slices/productSlice';
+import { fetchProducts, setSearchQuery, setSelectedCategory, setPriceRange } from '../../store/slices/productSlice';
 import { fetchCategories as fetchCategoriesAction } from '../../store/slices/categorySlice';
 import ProductGrid from '../../components/products/ProductGrid';
-import ProductCard from '../../components/products/ProductCard';
 import SearchBar from '../../components/common/SearchBar';
-import CategoryFilter from '../../components/common/CategoryFilter';
 import Navigation from '../../components/common/Navigation';
-import { Link } from 'react-router-dom';
-import { dummyProducts, featuredDummyProducts } from '../../../secreted/dummyData';
+import FilterModal from '../../components/common/FilterModal';
+import { dummyProducts } from '../../../secreted/dummyData';
+
+const DEFAULT_PRICE = { min: 0, max: 10000 };
+
+const sortingOptions = [
+  { value: 'relevance', label: 'Sort by: Relevance' },
+  { value: 'price_asc', label: 'Price: Low to High' },
+  { value: 'price_desc', label: 'Price: High to Low' },
+  { value: 'newest', label: 'Newest Arrivals' },
+];
+
+const viewOptions = [
+  { value: 'comfortable', label: 'Comfortable' },
+  { value: 'compact', label: 'Compact' },
+];
 
 const HomePage = () => {
   const dispatch = useDispatch();
   const { products, loading, searchQuery, selectedCategory, priceRange } = useSelector((state) => state.products);
   const { categories } = useSelector((state) => state.categories);
-  const { token } = useSelector((state) => state.auth);
-  
-  const [priceFilter, setPriceFilter] = useState({ min: 0, max: 10000 });
 
-  // Derived collections with fallback to dummy data
-  const sourceProducts = products && products.length ? products : dummyProducts;
-  const featuredProducts = (products && products.length ? products : featuredDummyProducts).slice(0, 4);
-  const newArrivals = sourceProducts.slice(0, 8);
-  // Exclusive: showcase top-priced items as exclusive picks
-  const exclusiveProducts = [...sourceProducts]
-    .sort((a, b) => (b.price || 0) - (a.price || 0))
-    .slice(0, 8);
-  const popularCategories = categories.slice(0, 8);
+  // UI state
+  const [showFilters, setShowFilters] = useState(false);
+  const [sortOption, setSortOption] = useState('relevance');
+  const [view, setView] = useState('comfortable');
 
+  // Temp filter state for modal
+  const [tempPriceRange, setTempPriceRange] = useState(DEFAULT_PRICE);
+  const [tempSelectedCategory, setTempSelectedCategory] = useState('');
+
+  // Derived data and fallbacks
+  const sourceProducts = useMemo(() => (products && products.length ? products : dummyProducts), [products]);
+  const categoryMap = useMemo(() => Object.fromEntries(categories.map(c => [c._id, c.name])), [categories]);
+
+  // Locally sorted products (backend may ignore sort param)
+  const displayedProducts = useMemo(() => {
+    const arr = [...sourceProducts];
+    if (sortOption === 'price_asc') return arr.sort((a, b) => (a.price || 0) - (b.price || 0));
+    if (sortOption === 'price_desc') return arr.sort((a, b) => (b.price || 0) - (a.price || 0));
+    if (sortOption === 'newest') return arr.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    return arr;
+  }, [sourceProducts, sortOption]);
+
+  // Init categories on mount
+  useEffect(() => { dispatch(fetchCategoriesAction()); }, [dispatch]);
+
+  // Sync temp filters when opening modal
   useEffect(() => {
-    // Fetch categories on component mount
-    dispatch(fetchCategoriesAction());
-  }, [dispatch]);
+    if (showFilters) {
+      setTempPriceRange(priceRange || DEFAULT_PRICE);
+      setTempSelectedCategory(selectedCategory || '');
+    }
+  }, [showFilters, priceRange, selectedCategory]);
 
+  // Fetch products whenever query or filters/sort change
   useEffect(() => {
-    // Fetch products when filters change
     const queryParams = {
       q: searchQuery,
       category: selectedCategory,
       minPrice: priceRange.min,
       maxPrice: priceRange.max,
+      sort: sortOption,
       page: 1,
-      limit: 20
+      limit: 20,
     };
-    
     dispatch(fetchProducts(queryParams));
-  }, [dispatch, searchQuery, selectedCategory, priceRange]);
+  }, [dispatch, searchQuery, selectedCategory, priceRange, sortOption]);
 
-  const handleSearch = (query) => {
-    dispatch(setSearchQuery(query));
+  // Handlers
+  const handleSearch = (query) => dispatch(setSearchQuery(query));
+  const handleOpenFilters = () => setShowFilters(true);
+  const handleCloseFilters = () => setShowFilters(false);
+  const handleApplyFilters = () => {
+    dispatch(setSelectedCategory(tempSelectedCategory));
+    dispatch(setPriceRange({
+      min: Number.isFinite(+tempPriceRange.min) ? +tempPriceRange.min : DEFAULT_PRICE.min,
+      max: Number.isFinite(+tempPriceRange.max) ? +tempPriceRange.max : DEFAULT_PRICE.max,
+    }));
+    setShowFilters(false);
+  };
+  const handleResetFilters = () => {
+    setTempSelectedCategory('');
+    setTempPriceRange(DEFAULT_PRICE);
+    dispatch(setSelectedCategory(''));
+    dispatch(setPriceRange(DEFAULT_PRICE));
   };
 
-  const handlePriceRangeChange = (field, value) => {
-    const newRange = { ...priceFilter, [field]: parseInt(value) || 0 };
-    setPriceFilter(newRange);
-    dispatch(setPriceRange(newRange));
-  };
-
-  const handlePriceFilterApply = () => {
-    dispatch(setPriceRange(priceFilter));
+  const activeFilters = [
+    selectedCategory ? { type: 'category', label: categoryMap[selectedCategory] || 'Category' } : null,
+    (priceRange.min !== DEFAULT_PRICE.min || priceRange.max !== DEFAULT_PRICE.max)
+      ? { type: 'price', label: `$${priceRange.min} - $${priceRange.max}` }
+      : null,
+  ].filter(Boolean);
+  const clearSingleFilter = (type) => {
+    if (type === 'category') dispatch(setSelectedCategory(''));
+    if (type === 'price') dispatch(setPriceRange(DEFAULT_PRICE));
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-16">
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 pt-16">
       <Navigation />
 
-      {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div>
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">Find your next favorite product</h1>
-              <p className="text-blue-100 mb-6">Smart filters, curated picks, and fresh arrivals—tailored for you.</p>
-              <div className="flex flex-wrap gap-3">
-                <Link to="/" className="bg-white text-blue-700 hover:bg-blue-50 px-5 py-3 rounded-lg font-medium transition-colors shadow-md">Browse All</Link>
-                <Link to="/wishlist" className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-blue-700 px-5 py-3 rounded-lg font-medium transition-colors">Wishlist</Link>
-              </div>
-            </div>
-            <div className="hidden md:block">
-              <div className="relative">
-                <div className="absolute -top-6 -left-6 w-16 h-16 bg-yellow-400 rounded-full opacity-70"></div>
-                <div className="absolute -bottom-6 -right-6 w-16 h-16 bg-pink-400 rounded-full opacity-70"></div>
-                <div className="bg-white/10 backdrop-blur p-6 rounded-xl shadow-lg border border-white/20">
-                  <div className="grid grid-cols-2 gap-4">
-                    {featuredProducts.map(p => (
-                      <div key={p._id} className="bg-white/90 rounded-lg p-3 shadow-sm">
-                        <ProductCard product={p} />
-                      </div>
+      {/* Hero - macOS glassmorphism style */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-sky-100/40 via-transparent to-transparent">
+        {/* Ambient blobs */}
+        <div className="pointer-events-none absolute inset-0 -z-10">
+          <div className="absolute -top-24 -left-24 w-80 h-80 bg-sky-300/30 rounded-full blur-3xl" />
+          <div className="absolute -bottom-28 -right-28 w-96 h-96 bg-emerald-300/30 rounded-full blur-3xl" />
+          <div className="absolute top-1/3 -right-10 w-60 h-60 bg-fuchsia-300/20 rounded-full blur-3xl" />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16">
+          {/* Glass panel */}
+          <div className="relative rounded-3xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-[0_10px_40px_rgba(31,38,135,0.2)] overflow-hidden">
+            {/* subtle top highlight */}
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+            {/* gradient edge glow */}
+            <div className="absolute -inset-1 rounded-[28px] bg-gradient-to-br from-white/10 via-white/0 to-white/10 pointer-events-none" />
+
+            <div className="relative grid md:grid-cols-2 gap-8 p-6 md:p-10">
+              {/* Left: text + search + quick actions */}
+              <div className="flex flex-col justify-center">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 border border-white/30 text-xs text-gray-800 w-max mb-4 backdrop-blur">
+                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
+                  Curated second-hand marketplace
+                </div>
+                <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
+                  Discover pre-loved products in style
+                </h1>
+                <p className="text-slate-700/90 mt-3 md:mt-4 max-w-xl">
+                  A refined buying experience with glassy UI, smart filters, and great deals.
+                </p>
+
+                {/* Search in-glass */}
+                <div className="mt-6 md:mt-8 md:max-w-lg">
+                  <div className="rounded-xl bg-white/60 backdrop-blur border border-white/70 p-1.5 shadow-inner">
+                    <SearchBar onSearch={handleSearch} />
+                  </div>
+                </div>
+
+                {/* Quick actions */}
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <button
+                    onClick={handleOpenFilters}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/40 hover:bg-white/60 text-slate-800 border border-white/60 backdrop-blur transition"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M3 5.25A.75.75 0 013.75 4.5h16.5a.75.75 0 01.53 1.28l-6.19 6.188a1.5 1.5 0 00-.44 1.061v4.733a.75.75 0 01-1.072.67l-3-1.5a.75.75 0 01-.428-.67v-3.233a1.5 1.5 0 00-.439-1.061L3.22 5.78A.75.75 0 013 5.25z" clipRule="evenodd"/></svg>
+                    Filters
+                  </button>
+                  <button
+                    onClick={() => setSortOption('newest')}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/40 hover:bg-white/60 text-slate-800 border border-white/60 backdrop-blur transition"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5h13.5M3 9h9.75M3 13.5h6M3 18h2.25M16.5 16.5l3 3m0 0l3-3m-3 3v-12" /></svg>
+                    Newest
+                  </button>
+                </div>
+
+                {/* Category chips preview */}
+                {categories.length > 0 && (
+                  <div className="mt-5 flex flex-wrap items-center gap-2">
+                    {categories.slice(0, 10).map((c) => (
+                      <button
+                        key={c._id}
+                        onClick={() => dispatch(setSelectedCategory(c._id))}
+                        className={`px-3 py-1.5 rounded-full text-sm border transition-colors backdrop-blur ${
+                          selectedCategory === c._id
+                            ? 'bg-sky-600/90 text-white border-sky-600'
+                            : 'bg-white/50 text-slate-800 border-white/70 hover:bg-white/70'
+                        }`}
+                      >
+                        {c.name}
+                      </button>
                     ))}
                   </div>
+                )}
+              </div>
+
+              {/* Right: decorative preview grid */}
+              <div className="relative hidden md:block">
+                <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/30 rounded-full blur-xl" />
+                <div className="grid grid-cols-2 gap-4">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="rounded-2xl border border-white/30 bg-white/40 backdrop-blur p-3 shadow-sm">
+                      <div className="aspect-[4/3] w-full rounded-xl bg-gradient-to-br from-slate-200/70 to-white/60" />
+                      <div className="mt-3 h-2.5 w-3/4 rounded-full bg-white/70" />
+                      <div className="mt-2 h-2 w-1/2 rounded-full bg-white/60" />
+                      <div className="mt-3 h-6 w-16 rounded-md bg-white/80" />
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
           </div>
+        </div>
+      </section>
 
-          {/* Inline Search */}
-          <div className="mt-10">
-            <div className="max-w-3xl">
-              <SearchBar onSearch={handleSearch} />
+      {/* Controls Bar */}
+      <section className="bg-white/70 backdrop-blur sticky top-16 z-30 border-y">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="text-sm text-gray-600">
+              {loading ? 'Loading products…' : `Found ${displayedProducts.length} products`}
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleOpenFilters}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5h18M5.25 9h13.5M8.25 13.5h7.5M10.5 18h3" />
+                </svg>
+                Filters
+              </button>
+              <select
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value)}
+                className="px-3 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+              >
+                {sortingOptions.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              <select
+                value={view}
+                onChange={(e) => setView(e.target.value)}
+                className="px-3 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+              >
+                {viewOptions.map(v => (
+                  <option key={v.value} value={v.value}>{`View: ${v.label}`}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {activeFilters.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 mt-3">
+              {activeFilters.map((f, idx) => (
+                <span key={idx} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/70 text-blue-700 border border-white/80 backdrop-blur text-sm shadow-sm">
+                  {f.label}
+                  <button onClick={() => clearSingleFilter(f.type)} className="rounded-full hover:bg-white/80 p-1" aria-label={`Clear ${f.type} filter`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1.707-10.293a1 1 0 10-1.414-1.414L10 8.586 8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </span>
+              ))}
+              <button onClick={handleResetFilters} className="ml-1 text-sm text-gray-700 hover:text-gray-900 underline">Clear all</button>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Products Grid */}
+      <section className="py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <ProductGrid products={displayedProducts} loading={loading} variant={view} />
+        </div>
+      </section>
+
+      {/* Filters Modal */}
+      <FilterModal
+        isOpen={showFilters}
+        onClose={handleCloseFilters}
+        onApply={handleApplyFilters}
+        onReset={handleResetFilters}
+        title="Filter products"
+      >
+        {/* Category */}
+        <div className="mb-6">
+          <h4 className="text-sm font-semibold text-gray-900 mb-3">Category</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <label className={`flex items-center gap-2 p-2 rounded-md border ${tempSelectedCategory === '' ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'}`}>
+              <input type="radio" name="category" value="" checked={tempSelectedCategory === ''} onChange={() => setTempSelectedCategory('')} />
+              <span>All Categories</span>
+            </label>
+            {categories.map(cat => (
+              <label key={cat._id} className={`flex items-center gap-2 p-2 rounded-md border ${tempSelectedCategory === cat._id ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                <input type="radio" name="category" value={cat._id} checked={tempSelectedCategory === cat._id} onChange={() => setTempSelectedCategory(cat._id)} />
+                <span>{cat.name}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Price Range */}
+        <div className="mb-6">
+          <h4 className="text-sm font-semibold text-gray-900 mb-3">Price range</h4>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Min</label>
+              <input type="number" value={tempPriceRange.min} min={0} onChange={(e) => setTempPriceRange(pr => ({ ...pr, min: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Max</label>
+              <input type="number" value={tempPriceRange.max} min={0} onChange={(e) => setTempPriceRange(pr => ({ ...pr, max: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="10000" />
             </div>
           </div>
         </div>
-      </section>
-
-      {/* Categories Section */}
-      <section className="py-10 bg-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Shop by Category</h2>
-            <span className="text-sm text-gray-500">{categories.length} categories</span>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-4">
-            {popularCategories.map((category) => (
-              <Link key={category._id} to={`/?category=${category._id}`} className="group bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                <div className="w-full h-20 bg-blue-50 flex items-center justify-center">
-                  <span className="text-2xl">{category.icon || '🛍️'}</span>
-                </div>
-                <div className="p-2 text-center">
-                  <h3 className="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors">{category.name}</h3>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* New Arrivals */}
-      <section className="py-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">New Arrivals</h2>
-            <Link to="/" className="text-blue-600 hover:text-blue-800 font-medium">View All →</Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {newArrivals.map((product) => (
-              <ProductCard key={product._id} product={product} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Exclusive Category */}
-      <section className="py-10 bg-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Exclusive</h2>
-            <Link to="/" className="text-blue-600 hover:text-blue-800 font-medium">View All →</Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {exclusiveProducts.map((product) => (
-              <ProductCard key={product._id} product={product} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Filter + All Products */}
-      <section className="py-10 border-t bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Sidebar Filters */}
-            <aside className="lg:col-span-1 space-y-6">
-              <CategoryFilter />
-              <div className="bg-white p-4 rounded-lg shadow-md">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Price Range</h3>
-                <div className="space-y-4">
-                  <div className="flex space-x-2">
-                    <input type="number" placeholder="Min" value={priceFilter.min} onChange={(e) => handlePriceRangeChange('min', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                    <input type="number" placeholder="Max" value={priceFilter.max} onChange={(e) => handlePriceRangeChange('max', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  </div>
-                  <button onClick={handlePriceFilterApply} className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors">Apply Filter</button>
-                </div>
-              </div>
-              <div className="bg-white p-4 rounded-lg shadow-md">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Stats</h3>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex justify-between"><span>Total Products:</span><span className="font-medium">{products.length}</span></div>
-                  <div className="flex justify-between"><span>Categories:</span><span className="font-medium">{categories.length}</span></div>
-                </div>
-              </div>
-            </aside>
-
-            {/* Main Content */}
-            <main className="lg:col-span-3">
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">{searchQuery ? `Search Results for "${searchQuery}"` : 'All Products'}</h2>
-                <p className="text-gray-600">{loading ? 'Loading...' : `Found ${sourceProducts.length} products`}</p>
-              </div>
-              <ProductGrid products={sourceProducts} loading={loading} />
-            </main>
-          </div>
-        </div>
-      </section>
-
-      {/* Promo Banner */}
-      <section className="py-10 bg-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl shadow-lg overflow-hidden">
-            <div className="md:flex">
-              <div className="p-8 md:p-12 md:w-1/2">
-                <h2 className="text-3xl font-bold text-white mb-4">Special Offers</h2>
-                <p className="text-purple-100 mb-6">Get up to 50% off on selected items. Limited time offer!</p>
-                <Link to="/" className="inline-block bg-white text-purple-700 hover:bg-purple-50 px-6 py-3 rounded-lg font-medium transition-colors shadow-md">Shop Now</Link>
-              </div>
-              <div className="md:w-1/2 relative">
-                <img src="https://images.unsplash.com/photo-1607083206968-13611e3d76db?auto=format&fit=crop&w=2215&q=80" alt="Special Offers" className="w-full h-full object-cover" />
-                <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-l from-transparent to-purple-600/30"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      </FilterModal>
     </div>
   );
 };
