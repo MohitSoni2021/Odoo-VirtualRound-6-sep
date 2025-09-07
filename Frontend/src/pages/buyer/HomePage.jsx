@@ -193,7 +193,7 @@ const HomePage = () => {
                       <div className="aspect-[4/3] w-full rounded-xl bg-gradient-to-br from-slate-200/70 to-white/60" />
                       <div className="mt-3 h-2.5 w-3/4 rounded-full bg-white/70" />
                       <div className="mt-2 h-2 w-1/2 rounded-full bg-white/60" />
-                      <div className="mt-3 h-6 w-16 rounded-md bg-white/80" />
+                      <div className="mt-3 h-6 w-24 rounded-md bg-white/80" />
                     </div>
                   ))}
                 </div>
@@ -204,16 +204,16 @@ const HomePage = () => {
       </section>
 
       {/* Controls Bar */}
-      <section className="bg-white/70 backdrop-blur sticky top-16 z-30 border-y">
+      <section className="bg-white/80 backdrop-blur sticky top-16 z-30 border-y border-slate-200/70">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-slate-600">
               {loading ? 'Loading products…' : `Found ${displayedProducts.length} products`}
             </div>
             <div className="flex items-center gap-3">
               <button
                 onClick={handleOpenFilters}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 hover:bg-slate-50 shadow-sm"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5h18M5.25 9h13.5M8.25 13.5h7.5M10.5 18h3" />
@@ -223,18 +223,18 @@ const HomePage = () => {
               <select
                 value={sortOption}
                 onChange={(e) => setSortOption(e.target.value)}
-                className="px-3 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+                className="px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 hover:border-slate-400 shadow-sm"
               >
-                {sortingOptions.map(opt => (
+                {sortingOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
               <select
                 value={view}
                 onChange={(e) => setView(e.target.value)}
-                className="px-3 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+                className="px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 hover:border-slate-400 shadow-sm"
               >
-                {viewOptions.map(v => (
+                {viewOptions.map((v) => (
                   <option key={v.value} value={v.value}>{`View: ${v.label}`}</option>
                 ))}
               </select>
@@ -244,16 +244,16 @@ const HomePage = () => {
           {activeFilters.length > 0 && (
             <div className="flex flex-wrap items-center gap-2 mt-3">
               {activeFilters.map((f, idx) => (
-                <span key={idx} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/70 text-blue-700 border border-white/80 backdrop-blur text-sm shadow-sm">
+                <span key={idx} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white text-slate-700 border border-slate-200 backdrop-blur text-sm shadow-sm">
                   {f.label}
-                  <button onClick={() => clearSingleFilter(f.type)} className="rounded-full hover:bg-white/80 p-1" aria-label={`Clear ${f.type} filter`}>
+                  <button onClick={() => clearSingleFilter(f.type)} className="rounded-full hover:bg-slate-100 p-1" aria-label={`Clear ${f.type} filter`}>
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1.707-10.293a1 1 0 10-1.414-1.414L10 8.586 8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293z" clipRule="evenodd" />
                     </svg>
                   </button>
                 </span>
               ))}
-              <button onClick={handleResetFilters} className="ml-1 text-sm text-gray-700 hover:text-gray-900 underline">Clear all</button>
+              <button onClick={handleResetFilters} className="ml-1 text-sm text-slate-700 hover:text-slate-900 underline">Clear all</button>
             </div>
           )}
         </div>

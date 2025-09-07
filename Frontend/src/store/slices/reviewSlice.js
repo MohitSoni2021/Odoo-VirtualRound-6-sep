@@ -87,13 +87,28 @@ const reviewSlice = createSlice({
       })
       .addCase(createReview.fulfilled, (state, action) => {
         state.loading = false;
-        const existingIndex = state.myReviews.findIndex(
-          review => review.product._id === action.payload.review.product._id
+        const newReview = action.payload.review;
+        if (!newReview) return;
+
+        // Upsert into myReviews
+        const myIdx = state.myReviews.findIndex(
+          (r) => r && r.product && r.product._id === newReview.product._id
         );
-        if (existingIndex !== -1) {
-          state.myReviews[existingIndex] = action.payload.review;
+        if (myIdx !== -1) {
+          state.myReviews[myIdx] = newReview;
         } else {
-          state.myReviews.unshift(action.payload.review);
+          state.myReviews.unshift(newReview);
+        }
+
+        // Upsert into productReviews
+        const prIdxById = state.productReviews.findIndex((r) => r && r._id && newReview._id && r._id === newReview._id);
+        const prIdxByUser = prIdxById === -1
+          ? state.productReviews.findIndex((r) => r && r.user && newReview.user && r.user._id === newReview.user._id)
+          : prIdxById;
+        if (prIdxByUser !== -1) {
+          state.productReviews[prIdxByUser] = newReview;
+        } else {
+          state.productReviews.unshift(newReview);
         }
       })
       .addCase(createReview.rejected, (state, action) => {

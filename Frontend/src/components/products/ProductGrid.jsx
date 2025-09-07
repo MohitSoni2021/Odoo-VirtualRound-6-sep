@@ -12,14 +12,14 @@ const ProductGrid = ({ products, loading, variant = 'comfortable' }) => {
     return (
       <div className={gridClasses}>
         {[...Array(8)].map((_, index) => (
-          <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
-            <div className="w-full h-48 bg-gray-200"></div>
+          <div key={index} className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm animate-pulse">
+            <div className="w-full h-44 bg-slate-100" />
             <div className="p-4">
-              <div className="h-4 bg-gray-200 rounded mb-2"></div>
-              <div className="h-3 bg-gray-200 rounded mb-3"></div>
+              <div className="h-4 bg-slate-100 rounded mb-2" />
+              <div className="h-3 bg-slate-100 rounded mb-3" />
               <div className="flex justify-between items-center">
-                <div className="h-6 bg-gray-200 rounded w-16"></div>
-                <div className="h-8 bg-gray-200 rounded w-20"></div>
+                <div className="h-6 bg-slate-100 rounded w-16" />
+                <div className="h-8 bg-slate-100 rounded w-20" />
               </div>
             </div>
           </div>

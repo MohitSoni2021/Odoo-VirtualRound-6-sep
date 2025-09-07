@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchProductById, clearCurrentProduct } from '../../store/slices/productSlice';
-import { fetchProductReviews, createReview } from '../../store/slices/reviewSlice';
+import { fetchProductReviews, fetchMyReviews, createReview } from '../../store/slices/reviewSlice';
 import { addToCart } from '../../store/slices/cartSlice';
 import { addToWishlist, removeFromWishlist } from '../../store/slices/wishlistSlice';
 import Navigation from '../../components/common/Navigation';
@@ -42,12 +42,13 @@ const ProductDetailPage = () => {
     if (id) {
       dispatch(fetchProductById(id));
       dispatch(fetchProductReviews(id));
+      if (token) dispatch(fetchMyReviews(token));
     }
 
     return () => {
       dispatch(clearCurrentProduct());
     };
-  }, [dispatch, id]);
+  }, [dispatch, id, token]);
 
   const handleAddToCart = () => {
     if (!token) {
@@ -70,7 +71,7 @@ const ProductDetailPage = () => {
     }
   };
 
-  const handleSubmitReview = () => {
+  const handleSubmitReview = async () => {
     if (!token) {
       navigate('/login');
       return;
@@ -82,9 +83,17 @@ const ProductDetailPage = () => {
       comment: reviewText,
     };
 
-    dispatch(createReview({ reviewData, token }));
-    setReviewText('');
-    setShowReviewForm(false);
+    try {
+      await dispatch(createReview({ reviewData, token })).unwrap();
+      // Refresh both product and my reviews to ensure UI is up-to-date
+      dispatch(fetchProductReviews(id));
+      dispatch(fetchMyReviews(token));
+      setReviewText('');
+      setShowReviewForm(false);
+    } catch (e) {
+      // Optionally surface error to user later
+      console.error('Failed to create review:', e);
+    }
   };
 
   // FIX: avoid undefined access
