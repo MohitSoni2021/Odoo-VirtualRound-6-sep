@@ -57,6 +57,15 @@ function Login() {
     } catch (error) {
       console.error('Login error:', error);
       setErrorMessage(error.message || 'Invalid credentials');
+      
+      // If the error is about account verification, show the verify button
+      if (error.message && error.message.includes('verify your account')) {
+        setErrorMessage(prev => ({
+          message: error.message,
+          needsVerification: true,
+          email: email // Store email for the verification process
+        }));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -94,7 +103,15 @@ function Login() {
           {errorMessage && (
             <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">
               <p className="font-bold">Error</p>
-              <p>{errorMessage}</p>
+              <p>{errorMessage.message || errorMessage}</p>
+              {errorMessage.needsVerification && (
+                <button
+                  onClick={() => navigate(`/verify-account?email=${encodeURIComponent(errorMessage.email)}`)}
+                  className="mt-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded text-sm"
+                >
+                  Verify Account
+                </button>
+              )}
             </div>
           )}
           {successMessage && (

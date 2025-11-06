@@ -85,6 +85,7 @@ const register = async (req, res) => {
       existingUser.password = password;
       existingUser.role = role;
       existingUser.otp = otp;
+      existingUser.otpValid = true;
       user = await existingUser.save();
     } else {
       user = await User.create({
@@ -93,6 +94,7 @@ const register = async (req, res) => {
         password,
         role,
         otp,
+        otpValid: true,
         isVerified: false,
       });
     }
@@ -122,6 +124,7 @@ const resendAccountVerificationOtp = async (req, res) => {
 
     const { tempToken, otp } = await sendOtp(email, user.name);
     user.otp = otp;
+    user.otpValid = true;
     await user.save();
 
     return res
